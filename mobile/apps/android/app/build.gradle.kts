@@ -15,6 +15,13 @@ android {
         versionCode = 1
         versionName = "0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // gRPC backend address baked in at build time. Override per build with
+        //   BACKEND_ENDPOINT=192.168.1.42:7777 task android:run
+        // Default 10.0.2.2 is the host loopback alias inside the Android emulator;
+        // real devices need the LAN IP.
+        val backend = System.getenv("BACKEND_ENDPOINT") ?: "10.0.2.2:7777"
+        buildConfigField("String", "BACKEND_ENDPOINT", "\"$backend\"")
     }
 
     flavorDimensions += "core"
@@ -25,6 +32,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true  // required in AGP 8+ for buildConfigField to work
     }
 
     compileOptions {

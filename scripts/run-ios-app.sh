@@ -8,6 +8,10 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 1
 fi
 
+# xcodegen substitutes ${BACKEND_ENDPOINT} into the generated Info.plist;
+# ensure it's set so generation doesn't produce an empty value.
+export BACKEND_ENDPOINT="${BACKEND_ENDPOINT:-localhost:7777}"
+
 echo "==> bind + xcodegen"
 ./scripts/bind-ios.sh
 (cd mobile/apps/ios && xcodegen generate)

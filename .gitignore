@@ -4,6 +4,9 @@ build/
 # Task runner cache (sources:/generates: change detection)
 .task/
 
+# Auto-generated env-passthrough wrapper for the buildhost dispatcher
+scripts/_envwrap.sh
+
 # Misplaced Android SDK install (lives in ~/Android/Sdk; this directory was an
 # unzip artifact from setting up cmdline-tools)
 cmdline-tools/

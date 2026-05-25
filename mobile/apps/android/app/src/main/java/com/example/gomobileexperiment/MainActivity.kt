@@ -31,6 +31,8 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Point the Go core at the gRPC backend baked in at build time.
+        Core.setEndpoint(BuildConfig.BACKEND_ENDPOINT)
         setContent {
             MaterialTheme {
                 Surface(Modifier.fillMaxSize()) {

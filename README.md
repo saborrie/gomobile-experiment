@@ -135,6 +135,33 @@ task android:test   # instrumented tests against the demo flavor
 task proto:gen      # regenerate api/gen/go/* from api/*.proto
 ```
 
+## Pointing the apps at a dev backend
+
+Both apps read the gRPC endpoint at build time. Set `BACKEND_ENDPOINT` in
+your shell before running the app task:
+
+```bash
+export BACKEND_ENDPOINT=192.168.1.111:7777   # your LAN IP + server port
+task server                                  # in one terminal
+task android:run                             # in another
+task ios:run                                 # or this
+```
+
+- **Android**: Gradle reads `BACKEND_ENDPOINT` and exposes it via
+  `BuildConfig.BACKEND_ENDPOINT`. `MainActivity.kt` calls
+  `Core.setEndpoint(BuildConfig.BACKEND_ENDPOINT)` at startup. Default
+  (when unset): `10.0.2.2:7777` — the emulator's host-loopback alias.
+- **iOS**: the dispatcher (`scripts/run-on-mac.sh`) generates a one-off
+  wrapper script that exports `BACKEND_ENDPOINT` in the Mac runner's env
+  before invoking `scripts/run-ios-app.sh`. xcodegen substitutes the env
+  var into `Info.plist` (`INFOPLIST_KEY_BackendEndpoint`).
+  `GoMobileExperimentApp.swift` reads it via `Bundle.main` and calls
+  `CoreSetEndpoint`. Default: `localhost:7777`.
+
+The wrapper trick keeps the broker protocol unchanged — no env-var
+passthrough plumbing in `tools/buildhost/`; the dispatcher bakes config
+in on the Linux side and ships it inside the tarball.
+
 ## Where the gRPC step landed
 
 - Generated code lives in `api/gen/go/` (committed); regenerate with

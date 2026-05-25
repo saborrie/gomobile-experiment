@@ -24,6 +24,11 @@ targets:
       MARKETING_VERSION: "0.1"
       INFOPLIST_KEY_UILaunchScreen_Generation: YES
       INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      # gRPC backend address baked in via Info.plist. The ${...} is xcodegen
+      # env substitution: at project-generation time, BACKEND_ENDPOINT is read
+      # from the environment. The iOS build scripts ensure it's set (default
+      # localhost:7777) before invoking xcodegen.
+      INFOPLIST_KEY_BackendEndpoint: ${BACKEND_ENDPOINT}
       CODE_SIGNING_ALLOWED: NO
     dependencies:
       # Built by `gomobile bind -target=ios` (run by build-ios-app.sh).
