@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/saborrie/go-mobile-experiment/api/gen/go;api";
+
+// Profile is the user-profile lookup service.
+service Profile {
+  rpc Fetch(FetchRequest) returns (FetchResponse);
+}
+
+message FetchRequest {
+  string id = 1;
+}
+
+message FetchResponse {
+  string id = 1;
+  string name = 2;
+}

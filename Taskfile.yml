@@ -8,14 +8,40 @@ tasks:
     silent: true
 
   test:
-    desc: Run Go tests on the core package (production build)
+    desc: Run Go unit tests (production build)
     cmds:
-      - go test ./mobile/...
+      - go test ./mobile/... ./server/...
 
   test:demo:
     desc: Run Go tests with the demo backend (exercises scenarios)
     cmds:
       - go test -tags=demo ./mobile/...
+
+  test:integration:
+    desc: Run end-to-end integration tests (spins up real gRPC server)
+    cmds:
+      - go test ./integration/...
+
+  test:all:
+    desc: All Go tests — prod, demo, and integration
+    cmds:
+      - task: test
+      - task: test:demo
+      - task: test:integration
+
+  proto:gen:
+    desc: Regenerate Go stubs from api/*.proto
+    cmds:
+      - protoc -I=api --go_out=. --go_opt=module=github.com/saborrie/go-mobile-experiment --go-grpc_out=. --go-grpc_opt=module=github.com/saborrie/go-mobile-experiment api/*.proto
+    sources:
+      - api/*.proto
+    generates:
+      - api/gen/go/*.go
+
+  server:
+    desc: Run the gRPC backend (listens on 0.0.0.0:7777 by default; override with ADDR=...)
+    cmds:
+      - go run ./server
 
   bind:android:
     desc: Build build/core.aar (production backend)

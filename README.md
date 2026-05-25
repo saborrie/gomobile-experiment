@@ -1,7 +1,7 @@
 # go-mobile-experiment
 
 A gomobile-based experiment: one shared Go core powers both Android and
-iOS apps, with a gRPC backend planned as the next step.
+iOS apps, talking to a gRPC backend.
 
 ## Structure
 
@@ -17,8 +17,21 @@ iOS apps, with a gRPC backend planned as the next step.
 │   │                        # mobile/internal/* for actual logic.
 │   └── internal/            # Mobile-only Go. Full Go (maps, slices of
 │       ├── greet/           # structs, interfaces — all fine here).
-│       └── profile/         # Go's `internal/` rule means nothing outside
-│                            # mobile/ can import these.
+│       ├── profile/         # Go's `internal/` rule means nothing outside
+│       └── rpcclient/       # mobile/ can import these.
+│
+├── server/                  # gRPC backend
+│   ├── main.go              # entry — binds 0.0.0.0:7777 by default
+│   └── svc/                 # service implementations (importable —
+│                            # integration tests reach in here)
+│
+├── api/                     # gRPC service definitions
+│   ├── *.proto              # source of truth
+│   └── gen/go/              # generated Go stubs (imported by both
+│                            # mobile/internal/rpcclient + server/svc)
+│
+├── integration/             # End-to-end tests: spin up real server,
+│                            # call through mobile/core, assert.
 │
 ├── tools/                   # Dev tooling (not shipped, not the product)
 │   └── buildhost/           # Build broker — lets Linux devs run macOS-only
@@ -30,27 +43,20 @@ iOS apps, with a gRPC backend planned as the next step.
 └── go.sum
 ```
 
-Planned, not yet present:
+## How the boundaries work
 
-```
-├── server/                  # gRPC backend
-│   ├── main.go
-│   └── internal/{svc,db}/
-└── api/                     # gRPC service definitions
-    ├── *.proto
-    └── gen/go/              # generated Go stubs
-```
-
-## Two `internal/` directories, no shared one
-
-Go's `internal/foo` is only importable by code in the directory containing
+Go's `internal/foo` is importable only by code in the directory containing
 `internal/`. So `mobile/internal/greet` is reachable only from `mobile/*` —
-the server (once it exists) physically cannot import it. Same in reverse
-once `server/internal/` lands.
+the server physically cannot import it.
 
-The only thing both sides see is `api/gen/go/` — the gRPC contract. If
-something genuinely needs to be shared (rare), it lives in `api/` or a
-new top-level non-`internal/` package.
+`server/svc/` is intentionally *not* under `internal/`: the handlers are the
+server's public mounting points, and the top-level integration test needs to
+mount them on a test gRPC server. Anything truly server-private (db pool,
+auth middleware, config) will live in a future `server/internal/`.
+
+The only place mobile and server both see is `api/gen/go/` — the gRPC
+contract. If something genuinely needs to be shared (rare), it lives in
+`api/` or a top-level non-`internal/` package.
 
 ## The wrapper + internal pattern
 
@@ -97,24 +103,26 @@ into the real model.
 
 ## Rationale per directory
 
-| Dir | Why |
-|---|---|
-| `mobile/` | Everything shipping in the mobile apps. A parallel `web/` could appear later at the same level. |
-| `mobile/apps/` | Platform-specific apps (Android, iOS). Distinguishes them from `mobile/core/` (the shared library they consume). |
-| `mobile/core/` | FFI surface gomobile binds. Kept thin; just shape-translation. |
-| `mobile/internal/` | Mobile-only Go code. Sub-packages by domain. Scoped via Go's `internal/` rule. |
-| `tools/` | Dev tooling — used during development but not shipped or run as the product. |
-| `scripts/` | Build + dispatch scripts. Currently all mobile-specific. Split into `scripts/{mobile,backend}/` if/when backend scripts appear. |
+| Dir                | Why                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `mobile/`          | Everything shipping in the mobile apps. A parallel `web/` could appear later at the same level.                                 |
+| `mobile/apps/`     | Platform-specific apps (Android, iOS). Distinguishes them from `mobile/core/` (the shared library they consume).                |
+| `mobile/core/`     | FFI surface gomobile binds. Kept thin; just shape-translation.                                                                  |
+| `mobile/internal/` | Mobile-only Go code. Sub-packages by domain. Scoped via Go's `internal/` rule.                                                  |
+| `tools/`           | Dev tooling — used during development but not shipped or run as the product.                                                    |
+| `scripts/`         | Build + dispatch scripts. Currently all mobile-specific. Split into `scripts/{mobile,backend}/` if/when backend scripts appear. |
 
 ## Bind / build / run
 
 Daily loops:
 
 ```
-task test           # Go unit tests (~1 ms)
-task test:demo      # same with -tags=demo, exercises scenarios
-task android:run    # build + install + launch on Android phone
-task ios:run        # build + install + launch on iOS simulator (Mac satellite)
+task test               # Go unit tests, prod + server (~1 ms)
+task test:demo          # same with -tags=demo, exercises scenarios
+task test:integration   # spin up real server, call via mobile/core, assert
+task server             # run the gRPC backend on 0.0.0.0:7777
+task android:run        # build + install + launch on Android phone
+task ios:run            # build + install + launch on iOS simulator (Mac satellite)
 ```
 
 Less frequent:
@@ -124,19 +132,20 @@ task buildhost      # start the iOS build broker (Linux dev side)
 task bind:android   # produce build/core.aar only
 task bind:ios       # produce build/Core.xcframework only
 task android:test   # instrumented tests against the demo flavor
+task proto:gen      # regenerate api/gen/go/* from api/*.proto
 ```
 
-## Open questions for the gRPC step
+## Where the gRPC step landed
 
-1. **Where does generated code live?** `api/gen/go/` (proposed) keeps
-   source and output together. Alternative: regenerate-on-the-fly via
-   `go generate` with no committed artefacts.
-2. **Will mobile core's gRPC client be visible to the apps?** Proposal:
-   no — `mobile/internal/rpcclient/` calls gRPC, `mobile/core/` exposes a
-   simpler Go API to gomobile. gomobile's FFI rules would make raw gRPC
-   types painful to surface anyway.
-3. **One module or multiple?** Single `go.mod` at root is simplest while
-   `mobile/core` and `server/` share generated proto code.
+- Generated code lives in `api/gen/go/` (committed); regenerate with
+  `task proto:gen` after editing `api/*.proto`.
+- Mobile apps never see gRPC types. `mobile/internal/rpcclient/` calls
+  gRPC; `mobile/core/` exposes only FFI-friendly `Profile{Id,Name}` etc.
+  to the apps.
+- Single `go.mod` at root so `mobile/internal/rpcclient` and `server/svc`
+  share generated proto code.
+- Endpoint configurable at runtime via `Core.SetEndpoint(addr)` (the apps
+  call this at startup with their dev/prod backend URL).
 
 ## Single-binary-per-domain assumption
 
