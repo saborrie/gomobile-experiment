@@ -1,0 +1,18 @@
+# Build outputs
+build/
+
+# Task runner cache (sources:/generates: change detection)
+.task/
+
+# Misplaced Android SDK install (lives in ~/Android/Sdk; this directory was an
+# unzip artifact from setting up cmdline-tools)
+cmdline-tools/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Local memory directory if any tools drop files at the project root
+*.log

@@ -1,0 +1,32 @@
+name: GoMobileExperiment
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    # gomobile xcframeworks aren't sandbox-clean
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  GoMobileExperiment:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    settings:
+      GENERATE_INFOPLIST_FILE: YES
+      CURRENT_PROJECT_VERSION: 1
+      MARKETING_VERSION: "0.1"
+      INFOPLIST_KEY_UILaunchScreen_Generation: YES
+      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      CODE_SIGNING_ALLOWED: NO
+    dependencies:
+      # Built by `gomobile bind -target=ios` (run by build-ios-app.sh).
+      - framework: ../build/Core.xcframework
+        embed: true
+        codeSign: true

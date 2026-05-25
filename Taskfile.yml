@@ -1,0 +1,113 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list
+    silent: true
+
+  test:
+    desc: Run Go tests on the core package (production build)
+    cmds:
+      - go test ./core/...
+
+  test:demo:
+    desc: Run Go tests with the demo backend (exercises scenarios)
+    cmds:
+      - go test -tags=demo ./core/...
+
+  bind:android:
+    desc: Build build/core.aar (production backend)
+    cmds:
+      - ./scripts/bind-android.sh
+    sources:
+      - core/**/*.go
+      - go.mod
+      - go.sum
+    generates:
+      - build/core.aar
+
+  bind:android:demo:
+    desc: Build build/core-demo.aar (demo backend with scenario control)
+    cmds:
+      - TAGS=demo OUT=build/core-demo.aar ./scripts/bind-android.sh
+    sources:
+      - core/**/*.go
+      - go.mod
+      - go.sum
+    generates:
+      - build/core-demo.aar
+
+  bind:ios:
+    desc: Build build/Core.xcframework (runs on macOS, locally or via broker)
+    cmds:
+      - ./scripts/run-on-mac.sh ./scripts/bind-ios.sh
+
+  ios:build:
+    desc: Build the iOS app (bind + xcodegen + xcodebuild for simulator)
+    cmds:
+      - ./scripts/run-on-mac.sh ./scripts/build-ios-app.sh
+
+  ios:run:
+    desc: Build + install + launch the iOS app on a booted simulator on the Mac
+    cmds:
+      - ./scripts/run-on-mac.sh ./scripts/run-ios-app.sh
+
+  buildhost:
+    desc: Start the iOS build broker (leave running; Mac connects via curl localhost:3003 | bash)
+    cmds:
+      - go run ./cmd/buildhost
+
+  android:build:
+    desc: Assemble the prod Android APK (no install)
+    cmds:
+      - task: bind:android
+      - cd android && ./gradlew assembleProdDebug
+
+  android:run:
+    desc: Build, install, and launch the PROD Android app on the connected device
+    cmds:
+      - task: bind:android
+      - cd android && ./gradlew installProdDebug
+      - adb shell am start -n com.example.gomobileexperiment/com.example.gomobileexperiment.MainActivity
+
+  android:demo:
+    desc: Build, install, and launch the DEMO Android app on the connected device
+    cmds:
+      - task: bind:android:demo
+      - cd android && ./gradlew installDemoDebug
+      - adb shell am start -n com.example.gomobileexperiment/com.example.gomobileexperiment.MainActivity
+
+  android:test:
+    desc: Run Android instrumented tests against the demo flavor (requires connected device)
+    cmds:
+      - task: bind:android:demo
+      - cd android && ./gradlew connectedDemoDebugAndroidTest
+
+  android:wrapper:
+    desc: 'One-time: bootstrap the Gradle wrapper (requires `gradle` on PATH)'
+    dir: android
+    cmds:
+      - gradle wrapper --gradle-version=8.10
+
+  adb:devices:
+    desc: List connected ADB devices
+    cmds:
+      - adb devices
+
+  adb:pair:
+    desc: 'Pair a phone via wireless ADB. Usage: task adb:pair -- <ip>:<pair-port>'
+    cmds:
+      - adb pair {{.CLI_ARGS}}
+
+  adb:connect:
+    desc: 'Connect to a paired phone. Usage: task adb:connect -- <ip>:<conn-port>'
+    cmds:
+      - adb connect {{.CLI_ARGS}}
+
+  clean:
+    desc: Remove all build outputs
+    cmds:
+      - rm -rf build
+      - rm -rf android/app/build android/build android/.gradle

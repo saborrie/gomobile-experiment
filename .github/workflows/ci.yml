@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel in-progress runs when a new commit lands on the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+
+      - name: Test (prod backend)
+        run: go test ./core/...
+
+      - name: Test (demo backend)
+        run: go test -tags=demo ./core/...
+
+      - name: Build buildhost
+        run: go build ./cmd/buildhost
+
+  android:
+    name: Android build + instrumented tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 ndk;27.3.13750724'
+
+      - name: Export ANDROID_NDK_HOME
+        run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> "$GITHUB_ENV"
+
+      - name: Install gomobile + gobind
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build prod + demo AARs
+        run: |
+          ./scripts/bind-android.sh
+          TAGS=demo OUT=build/core-demo.aar ./scripts/bind-android.sh
+
+      - name: Assemble both flavors
+        working-directory: android
+        run: ./gradlew assembleProdDebug assembleDemoDebug
+
+      # KVM is required for the x86_64 emulator to run at acceptable speed.
+      # Ubuntu runners have the kernel module; this just opens permissions.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Instrumented tests (demo flavor)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: cd android && ./gradlew :app:connectedDemoDebugAndroidTest
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-reports
+          path: android/app/build/reports/androidTests/
+
+  ios:
+    name: iOS bind + app build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+
+      - name: Install gomobile + gobind
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      # macos-latest is Darwin, so the build scripts run their local branch
+      # (no buildhost broker needed). The broker only exists for Linux devs.
+      - name: Build xcframeworks (prod + demo)
+        run: |
+          ./scripts/bind-ios.sh
+          TAGS=demo OUT=build/Core-demo.xcframework ./scripts/bind-ios.sh
+
+      - name: Build the iOS app
+        run: ./scripts/build-ios-app.sh
