@@ -30,6 +30,10 @@ targets:
       # localhost:7777) before invoking xcodegen.
       INFOPLIST_KEY_BackendEndpoint: ${BACKEND_ENDPOINT}
       CODE_SIGNING_ALLOWED: NO
+      # Go's runtime pulls in BSD libresolv for DNS lookups as soon as the
+      # net package is reachable (e.g. via grpc-go). Without this, linking
+      # fails with "_res_9_ninit / _res_9_nclose / _res_9_nsearch" undefined.
+      OTHER_LDFLAGS: $(inherited) -lresolv.9
     dependencies:
       # Built by `gomobile bind -target=ios` (run by build-ios-app.sh).
       # Relative path: mobile/apps/ios/ → project root is 3 levels up.
