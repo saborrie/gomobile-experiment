@@ -10,19 +10,20 @@ tasks:
   test:
     desc: Run Go tests on the core package (production build)
     cmds:
-      - go test ./core/...
+      - go test ./mobile/...
 
   test:demo:
     desc: Run Go tests with the demo backend (exercises scenarios)
     cmds:
-      - go test -tags=demo ./core/...
+      - go test -tags=demo ./mobile/...
 
   bind:android:
     desc: Build build/core.aar (production backend)
     cmds:
       - ./scripts/bind-android.sh
     sources:
-      - core/**/*.go
+      - mobile/core/**/*.go
+      - mobile/internal/**/*.go
       - go.mod
       - go.sum
     generates:
@@ -33,7 +34,8 @@ tasks:
     cmds:
       - TAGS=demo OUT=build/core-demo.aar ./scripts/bind-android.sh
     sources:
-      - core/**/*.go
+      - mobile/core/**/*.go
+      - mobile/internal/**/*.go
       - go.mod
       - go.sum
     generates:
@@ -63,31 +65,31 @@ tasks:
     desc: Assemble the prod Android APK (no install)
     cmds:
       - task: bind:android
-      - cd android && ./gradlew assembleProdDebug
+      - cd mobile/apps/android && ./gradlew assembleProdDebug
 
   android:run:
     desc: Build, install, and launch the PROD Android app on the connected device
     cmds:
       - task: bind:android
-      - cd android && ./gradlew installProdDebug
+      - cd mobile/apps/android && ./gradlew installProdDebug
       - adb shell am start -n com.example.gomobileexperiment/com.example.gomobileexperiment.MainActivity
 
   android:demo:
     desc: Build, install, and launch the DEMO Android app on the connected device
     cmds:
       - task: bind:android:demo
-      - cd android && ./gradlew installDemoDebug
+      - cd mobile/apps/android && ./gradlew installDemoDebug
       - adb shell am start -n com.example.gomobileexperiment/com.example.gomobileexperiment.MainActivity
 
   android:test:
     desc: Run Android instrumented tests against the demo flavor (requires connected device)
     cmds:
       - task: bind:android:demo
-      - cd android && ./gradlew connectedDemoDebugAndroidTest
+      - cd mobile/apps/android && ./gradlew connectedDemoDebugAndroidTest
 
   android:wrapper:
     desc: 'One-time: bootstrap the Gradle wrapper (requires `gradle` on PATH)'
-    dir: android
+    dir: mobile/apps/android
     cmds:
       - gradle wrapper --gradle-version=8.10
 

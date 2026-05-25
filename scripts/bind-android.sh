@@ -24,8 +24,8 @@ fi
 gomobile bind \
   -target=android \
   -androidapi=24 \
-  "${EXTRA_ARGS[@]}" \
+  ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} \
   -o "$OUT" \
-  ./core
+  ./mobile/core
 
 echo "Built $OUT"

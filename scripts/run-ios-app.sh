@@ -10,12 +10,12 @@ fi
 
 echo "==> bind + xcodegen"
 ./scripts/bind-ios.sh
-(cd ios && xcodegen generate)
+(cd mobile/apps/ios && xcodegen generate)
 
 echo "==> xcodebuild (iOS Simulator)"
-DERIVED="$(pwd)/ios/build/derived"
+DERIVED="$(pwd)/mobile/apps/ios/build/derived"
 xcodebuild \
-  -project ios/GoMobileExperiment.xcodeproj \
+  -project mobile/apps/ios/GoMobileExperiment.xcodeproj \
   -scheme GoMobileExperiment \
   -destination 'generic/platform=iOS Simulator' \
   -configuration Debug \

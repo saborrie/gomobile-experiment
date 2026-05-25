@@ -22,8 +22,8 @@ trap 'rm -f "$TARBALL" "$OUTPUT"' EXIT
 
 cd "$(dirname "$0")/.."
 
-echo "Tarballing source (core + ios + scripts)..."
-tar czf "$TARBALL" go.mod go.sum core ios scripts
+echo "Tarballing source (mobile + scripts)..."
+tar czf "$TARBALL" go.mod go.sum mobile scripts
 
 # Normalize "./scripts/foo.sh" → "scripts/foo.sh" for the broker.
 SCRIPT_REL="${SCRIPT#./}"

@@ -21,5 +21,5 @@ EXTRA=()
 
 # ${EXTRA[@]+"${EXTRA[@]}"} expands only if the array is set; needed because
 # `set -u` errors on a bare empty-array expansion.
-gomobile bind -target=ios ${EXTRA[@]+"${EXTRA[@]}"} -o "$OUT" ./core
+gomobile bind -target=ios ${EXTRA[@]+"${EXTRA[@]}"} -o "$OUT" ./mobile/core
 echo "Built $OUT"

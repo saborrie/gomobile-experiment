@@ -27,6 +27,7 @@ targets:
       CODE_SIGNING_ALLOWED: NO
     dependencies:
       # Built by `gomobile bind -target=ios` (run by build-ios-app.sh).
-      - framework: ../build/Core.xcframework
+      # Relative path: mobile/apps/ios/ → project root is 3 levels up.
+      - framework: ../../../build/Core.xcframework
         embed: true
         codeSign: true

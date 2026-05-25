@@ -39,8 +39,9 @@ android {
 
 dependencies {
     // The Go core. Each flavor pulls in its own AAR built by gomobile.
-    "prodImplementation"(files("../../build/core.aar"))
-    "demoImplementation"(files("../../build/core-demo.aar"))
+    // Relative path: mobile/apps/android/app/ → project root is 4 levels up.
+    "prodImplementation"(files("../../../../build/core.aar"))
+    "demoImplementation"(files("../../../../build/core-demo.aar"))
 
     val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
     implementation(composeBom)

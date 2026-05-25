@@ -23,13 +23,13 @@ jobs:
           cache: true
 
       - name: Test (prod backend)
-        run: go test ./core/...
+        run: go test ./mobile/...
 
       - name: Test (demo backend)
-        run: go test -tags=demo ./core/...
+        run: go test -tags=demo ./mobile/...
 
       - name: Build buildhost
-        run: go build ./cmd/buildhost
+        run: go build ./tools/buildhost
 
   android:
     name: Android build + instrumented tests
@@ -68,7 +68,7 @@ jobs:
           TAGS=demo OUT=build/core-demo.aar ./scripts/bind-android.sh
 
       - name: Assemble both flavors
-        working-directory: android
+        working-directory: mobile/apps/android
         run: ./gradlew assembleProdDebug assembleDemoDebug
 
       # KVM is required for the x86_64 emulator to run at acceptable speed.
@@ -87,14 +87,14 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          script: cd android && ./gradlew :app:connectedDemoDebugAndroidTest
+          script: cd mobile/apps/android && ./gradlew :app:connectedDemoDebugAndroidTest
 
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: android-test-reports
-          path: android/app/build/reports/androidTests/
+          path: mobile/apps/android/app/build/reports/androidTests/
 
   ios:
     name: iOS bind + app build
