@@ -1,23 +1,22 @@
-// Package core is the shared library exposed to Android/iOS via gomobile bind.
+// Package core is the FFI surface gomobile binds for the mobile apps.
 //
-// gomobile only exports a restricted subset of Go: signed ints/floats, bool,
-// string, []byte, structs, and interfaces with simple method sets. No maps,
-// no channels, no slices of non-byte types across the boundary.
+// Every exported function and type here is shaped to fit gomobile's
+// supported subset (no maps, no [] of non-byte types, no generics, etc.).
+// Real logic lives in mobile/internal/* — this package is just a thin
+// translation layer between the FFI-friendly shapes and the rich Go API.
 package core
 
-import "fmt"
+import "github.com/saborrie/go-mobile-experiment/mobile/internal/greet"
 
-// Hello returns a greeting. Exported free functions become static methods
-// on the generated Java/Swift class.
+// Hello returns a greeting. Exposed as a static method on the generated
+// Core class in Kotlin (Core.hello) / Swift (CoreHello).
 func Hello(name string) string {
-	if name == "" {
-		name = "world"
-	}
-	return fmt.Sprintf("Hello, %s!", name)
+	return greet.Hello(name)
 }
 
 // Greeter demonstrates a struct crossing the FFI boundary. The generated
-// binding exposes it as a class with a constructor and methods.
+// binding exposes it as a class with a constructor, a prefix property,
+// and a greet(name) method.
 type Greeter struct {
 	Prefix string
 }
@@ -27,5 +26,5 @@ func NewGreeter(prefix string) *Greeter {
 }
 
 func (g *Greeter) Greet(name string) string {
-	return fmt.Sprintf("%s %s", g.Prefix, name)
+	return greet.Greet(g.Prefix, name)
 }

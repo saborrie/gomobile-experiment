@@ -1,9 +1,9 @@
 //go:build !demo
 
-package core
+package profile
 
 import "errors"
 
-func fetchProfile(id string) (*Profile, error) {
+func fetch(id string) (*Profile, error) {
 	return nil, errors.New("FetchProfile: no production backend wired up yet")
 }

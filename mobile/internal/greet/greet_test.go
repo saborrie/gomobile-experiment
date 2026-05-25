@@ -1,4 +1,4 @@
-package core
+package greet
 
 import "testing"
 
@@ -16,9 +16,8 @@ func TestHello(t *testing.T) {
 	}
 }
 
-func TestGreeter(t *testing.T) {
-	g := NewGreeter("Hey")
-	if got, want := g.Greet("Steven"), "Hey Steven"; got != want {
+func TestGreet(t *testing.T) {
+	if got, want := Greet("Hey", "Steven"), "Hey Steven"; got != want {
 		t.Errorf("Greet = %q, want %q", got, want)
 	}
 }

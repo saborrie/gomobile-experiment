@@ -1,12 +1,12 @@
 //go:build demo
 
-package core
+package profile
 
 import "testing"
 
-func TestFetchProfile_Scenarios(t *testing.T) {
+func TestFetch_Scenarios(t *testing.T) {
 	SetScenario("happy")
-	p, err := FetchProfile("user-1")
+	p, err := Fetch("user-1")
 	if err != nil {
 		t.Fatalf("happy: unexpected error: %v", err)
 	}
@@ -15,12 +15,12 @@ func TestFetchProfile_Scenarios(t *testing.T) {
 	}
 
 	SetScenario("not-found")
-	if _, err := FetchProfile("x"); err == nil {
+	if _, err := Fetch("x"); err == nil {
 		t.Error("not-found: expected error, got nil")
 	}
 
 	SetScenario("network-error")
-	if _, err := FetchProfile("x"); err == nil {
+	if _, err := Fetch("x"); err == nil {
 		t.Error("network-error: expected error, got nil")
 	}
 }
